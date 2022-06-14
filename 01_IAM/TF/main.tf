@@ -10,21 +10,25 @@ terraform {
 }
 
 resource "aws_instance" "srv1" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = "${var.instance_type}"
+  ami             = data.aws_ami.ubuntu.id
+  instance_type   = var.instance_type
+  key_name        = aws_key_pair.test_key_pair.id
+  vpc_security_group_ids = [aws_security_group.test_sg.id] #aws_security_group.test_sg.id
 
   tags = {
-      Name = "prod instance"
-      Env = "prod"
+    Name = "prod instance"
+    Env  = "prod"
   }
 }
 
 resource "aws_instance" "srv2" {
-  ami = data.aws_ami.ubuntu.id
-  instance_type = "${var.instance_type}"
+  ami             = data.aws_ami.ubuntu.id
+  instance_type   = var.instance_type
+  key_name        = aws_key_pair.test_key_pair.id
+  vpc_security_group_ids = [aws_security_group.test_sg.id]
 
   tags = {
-      Name = "dev instance"
-      Env = "dev"
+    Name = "dev instance"
+    Env  = "dev"
   }
 }

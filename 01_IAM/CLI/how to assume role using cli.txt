@@ -1,0 +1,106 @@
+How do I assume an IAM role using the AWS CLI?
+    https://aws.amazon.com/premiumsupport/knowledge-center/iam-assume-role-cli/
+
+-------------------------------------------------------------------------------
+1. Create an IAM user that has permissions to assume roles
+-------------------------------------------------------------------------------
+1.1  Create an IAM user using the AWS CLI:
+    aws iam create-user --user-name Bob
+
+1.2  Create the IAM policy that grants the permissions to Bob
+    example-policy.json:
+    {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:Describe*",
+                "iam:ListRoles",
+                "sts:AssumeRole"
+            ],
+            "Resource": "*"
+        }
+    ]
+    }
+
+-------------------------------------------------------------------------------
+2. Create the IAM policy
+-------------------------------------------------------------------------------
+2.1  Use the aws iam create-policy command:
+    aws iam create-policy --policy-name example-policy --policy-document file://example-policy.json
+
+2.2  Attach the policy to Bob using the attach-user-policy command
+    aws iam attach-user-policy --user-name Bob --policy-arn "arn:aws:iam::123456789012:policy/example-policy"
+    aws iam list-attached-user-policies --user-name Bob
+
+-------------------------------------------------------------------------------
+3. Create the JSON file that defines the trust relationship of the IAM role
+-------------------------------------------------------------------------------
+3.1 Create the JSON file that defines the trust relationship
+    example-role-trust-policy.json:
+    {
+    "Version": "2012-10-17",
+    "Statement": {
+        "Effect": "Allow",
+        "Principal": { "AWS": "arn:aws:iam::123456789012:root" },
+        "Action": "sts:AssumeRole"
+        }
+    }
+
+-------------------------------------------------------------------------------
+4.  Create the IAM role and attach the policy
+-------------------------------------------------------------------------------
+4.1   Create the IAM role that has read-only access to Amazon RDS DB instances.
+        aws iam create-role --role-name example-role --assume-role-policy-document file://example-role-trust-policy.json
+        aws iam attach-role-policy --role-name example-role --policy-arn "arn:aws:iam::aws:policy/AmazonRDSReadOnlyAccess"
+        aws iam list-attached-role-policies --role-name example-role
+
+4.2     Create access keys for Bob with this command:
+      aws iam create-access-key --user-name Bob
+
+
+-------------------------------------------------------------------------------
+5.  Configure the access keys
+-------------------------------------------------------------------------------
+    aws configure --profile example-profile-name
+
+
+-------------------------------------------------------------------------------
+6.  Verify that the AWS CLI commands are invoked, and then verify IAM user access
+-------------------------------------------------------------------------------
+6.1
+     aws sts get-caller-identity
+
+6.2 Confirm that the IAM user has read-only access to EC2 instances and no access to Amazon RDS DB instances
+    aws ec2 describe-instances --query "Reservations[*].Instances[*].[VpcId, InstanceId, ImageId, InstanceType]"
+    aws rds describe-db-instances --query "DBInstances[*].[DBInstanceIdentifier, DBName, DBInstanceStatus, AvailabilityZone, DBInstanceClass]"
+
+-------------------------------------------------------------------------------
+7. Assume the IAM role
+-------------------------------------------------------------------------------
+7.1 Get the ARN of the role by running this command:
+    aws iam list-roles --query "Roles[?RoleName == 'example-role'].[RoleName, Arn]"
+
+7.2 The command lists IAM roles but filters the output by role name. To assume the IAM role, run this command:
+    aws sts assume-role --role-arn "arn:aws:iam::123456789012:role/example-role" --role-session-name AWSCLI-Session
+
+
+-------------------------------------------------------------------------------
+8.  Create environment variables to assume the IAM role and verify access
+-------------------------------------------------------------------------------
+8.1   Create three environment variables to assume the IAM role. These environment variables are filled out with this output:
+        export AWS_ACCESS_KEY_ID=RoleAccessKeyID
+        export AWS_SECRET_ACCESS_KEY=RoleSecretKey
+        export AWS_SESSION_TOKEN=RoleSessionToken
+
+8.2   Verify that you assumed the IAM role by running this command:
+        aws sts get-caller-identity
+
+8.3 You created an IAM role with read-only access to Amazon RDS DB instances, but no access to EC2 instances. Verify by running these commands:
+        aws ec2 describe-instances --query "Reservations[*].Instances[*].[VpcId, InstanceId, ImageId, InstanceType]"
+        aws rds describe-db-instances --query "DBInstances[*].[DBInstanceIdentifier, DBName, DBInstanceStatus, AvailabilityZone, DBInstanceClass]"
+
+8.4 To return to the IAM user, remove the environment variables:
+        unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+        aws sts get-caller-identity
