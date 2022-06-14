@@ -31,5 +31,9 @@ aws s3 rb s3://${BUCKET_NAME_2} --force
 aws iam list-policies --scope Local
 aws iam detach-role-policy --role-name ${ROLE_NAME} --policy-arn "arn:aws:iam::047259566030:policy/IAMBucketTestRole-Policy"
 aws iam delete-policy --policy-arn "arn:aws:iam::047259566030:policy/IAMBucketTestRole-Policy"
+aws iam list-instance-profiles
+aws iam remove-role-from-instance-profile --instance-profile-name IAMBucketTestRole-profile --role-name IAMBucketTestRole
+aws iam delete-instance-profile --instance-profile-name IAMBucketTestRole-profile
+
 aws iam delete-role --role-name ${ROLE_NAME}
 aws iam list-roles | grep -i test
