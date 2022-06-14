@@ -27,12 +27,13 @@ aws iam detach-group-policy --group-name ${GROUP_NAME} --policy-arn ${POLICY_ARN
 aws iam delete-policy --policy-arn ${POLICY_ARN}
 
 aws iam list-groups --query "Groups[?GroupName=='${GROUP_NAME}'].Arn" --output text
+aws iam remove-user-from-group --group-name ${GROUP_NAME} --user-name ${USER_NAME}
 GROUP_ARN=$(aws iam list-groups --query "Groups[?GroupName=='${GROUP_NAME}'].Arn" --output text)
 aws iam delete-group --group-name ${GROUP_NAME}
  
 aws iam list-users --query "Users[?UserName=='${USER_NAME}'].Arn" --output text
 USER_ARN=$(aws iam list-users --query "Users[?UserName=='${USER_NAME}'].Arn" --output text)
-aws iam remove-user-from-group --group-name ${GROUP_NAME} --user-name ${USER_NAME}
+
 ACCESS_KEY_ID=$(aws iam list-access-keys --user-name ${USER_NAME} --query "AccessKeyMetadata[?UserName=='${USER_NAME}'].AccessKeyId" --output text)
 aws iam delete-access-key --user-name ${USER_NAME} --access-key-id ${ACCESS_KEY_ID}
 aws iam delete-login-profile --user-name ${USER_NAME}

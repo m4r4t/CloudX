@@ -1,0 +1,58 @@
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html
+
+
+1.  Create an IAM role.
+2.  Define which accounts or AWS services can assume the role.
+3.  Define which API actions and resources the application can use after assuming the role.
+4.  Specify the role when you launch your instance, or attach the role to an existing instance.
+5.  Have the application retrieve a set of temporary credentials and use them.
+
+-------------------------------------------------------------------------------
+Instance profiles
+-------------------------------------------------------------------------------
+Amazon EC2 uses an instance profile as a container for an IAM role. When you create an IAM role using the IAM console, 
+the console creates an instance profile automatically and gives it the same name as the role to which it corresponds. If you use 
+the Amazon EC2 console to launch an instance with an IAM role or to attach an IAM role to an instance, you choose the role based on a 
+list of instance profile names.
+
+If you use the AWS CLI, API, or an AWS SDK to create a role, you create the role and instance profile as separate actions, with potentially 
+different names. If you then use the AWS CLI, API, or an AWS SDK to launch an instance with an IAM role or to attach an IAM role to an 
+instance, specify the instance profile name.
+
+An instance profile can contain only one IAM role. This limit cannot be increased.
+
+
+-------------------------------------------------------------------------------
+Grant an IAM user permission to pass an IAM role to an instance
+-------------------------------------------------------------------------------
+To enable an IAM user to launch an instance with an IAM role or to attach or replace an IAM role for an existing instance, you must 
+grant the user permission to use the following API actions:
+
+- iam:PassRole
+- ec2:AssociateIamInstanceProfile
+- ec2:ReplaceIamInstanceProfileAssociation
+
+For example, the following IAM policy grants users permission to launch instances with an IAM role, or to attach or replace an IAM role
+for an existing instance using the AWS CLI.
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+         "ec2:RunInstances",
+         "ec2:AssociateIamInstanceProfile",
+         "ec2:ReplaceIamInstanceProfileAssociation"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::123456789012:role/DevTeam*"
+    }
+  ]
+}
+
+

@@ -20,7 +20,10 @@ aws iam attach-role-policy --role-name ${ROLE_NAME} --policy-arn "arn:aws:iam::0
 aws iam list-attached-role-policies --role-name ${ROLE_NAME}
 aws iam create-instance-profile --instance-profile-name ${INSTANCE_PROFILE_NAME}
 aws iam add-role-to-instance-profile --instance-profile-name ${INSTANCE_PROFILE_NAME} --role-name ${ROLE_NAME}
-
+aws ec2 describe-iam-instance-profile-associations
+aws ec2 replace-iam-instance-profile-association --association-id iip-assoc-032f43e8d2a5a4bb7 --iam-instance-profile Name=${INSTANCE_PROFILE_NAME}
+aws ec2 associate-iam-instance-profile --instance-id i-036aba74b802d2a00 --iam-instance-profile Name=${INSTANCE_PROFILE_NAME}
+aws ec2 disassociate-iam-instance-profile --association-id iip-assoc-02353eb7efb7f7121
 
 #Cleaning Up
 aws s3 rb s3://${BUCKET_NAME_1} --force
