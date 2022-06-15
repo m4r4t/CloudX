@@ -10,10 +10,11 @@ terraform {
 }
 
 resource "aws_instance" "srv1" {
-  ami             = data.aws_ami.ubuntu.id
-  instance_type   = var.instance_type
-  key_name        = aws_key_pair.test_key_pair.id
-  vpc_security_group_ids = [aws_security_group.test_sg.id] #aws_security_group.test_sg.id
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type
+  key_name               = aws_key_pair.test_key_pair.id
+  vpc_security_group_ids = [aws_security_group.test_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
 
   tags = {
     Name = "prod instance"
@@ -22,9 +23,9 @@ resource "aws_instance" "srv1" {
 }
 
 resource "aws_instance" "srv2" {
-  ami             = data.aws_ami.ubuntu.id
-  instance_type   = var.instance_type
-  key_name        = aws_key_pair.test_key_pair.id
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type
+  key_name               = aws_key_pair.test_key_pair.id
   vpc_security_group_ids = [aws_security_group.test_sg.id]
 
   tags = {
