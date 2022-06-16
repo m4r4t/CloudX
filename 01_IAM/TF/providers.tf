@@ -1,4 +1,4 @@
 provider "aws" {
-  profile = "epam"
+  profile = "epam_test"
   region  = "eu-west-1"
 }
