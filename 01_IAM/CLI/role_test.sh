@@ -1,4 +1,5 @@
 export AWS_PROFILE=epam
+export AWS_CLI_AUTO_PROMPT=on
 export BUCKET_NAME_1="iam-test-user1-6030"
 export BUCKET_NAME_2="iam-test-other-user1-6030"
 export ROLE_NAME="IAMBucketTestRole"
