@@ -13,6 +13,8 @@ locals {
   igw2_name = "IGW2"
   igw3_name = "IGW3"
 
+  tgw_name = "TGW_TEST"
+
   rt1_name = "VPC1 public RT"
   rt2_name = "VPC2 public RT"
   rt3_name = "VPC3 public RT"
@@ -162,77 +164,72 @@ resource "aws_route_table_association" "rt3" {
 
 
 #------------------------------------------------------------------------------
-# VPC Peering
+# Transit GateWay   
 #------------------------------------------------------------------------------
+resource "aws_ec2_transit_gateway" "test" {
+  default_route_table_association = "enable"
+  default_route_table_propagation = "enable"
 
-resource "aws_vpc_peering_connection" "VPC_1_2" {
-  vpc_id      = module.vpc1.vpc_id
-  peer_vpc_id = module.vpc2.vpc_id
-  auto_accept = true
+  tags = merge({ Name = local.tgw_name }, var.base_tags)
 
-  tags = merge({ Name = local.vpc1_vpc2_pxc_name }, var.base_tags)
 }
 
-resource "aws_vpc_peering_connection_options" "VPC_1_2" {
-  vpc_peering_connection_id = aws_vpc_peering_connection.VPC_1_2.id
+resource "aws_ec2_transit_gateway_vpc_attachment" "vpc1" {
+  subnet_ids         = [aws_subnet.vpc1.id]
+  transit_gateway_id = aws_ec2_transit_gateway.test.id
+  vpc_id             = module.vpc1.vpc_id
 
-  accepter {
-    #allow_remote_vpc_dns_resolution = true
-  }
+  tags = merge({ Name = "to vpc1" }, var.base_tags)
+}
 
-  requester {
-    allow_vpc_to_remote_classic_link = true
-    allow_classic_link_to_remote_vpc = true
-  }
+resource "aws_ec2_transit_gateway_vpc_attachment" "vpc2" {
+  subnet_ids         = [aws_subnet.vpc2.id]
+  transit_gateway_id = aws_ec2_transit_gateway.test.id
+  vpc_id             = module.vpc2.vpc_id
+
+  tags = merge({ Name = "to vpc2" }, var.base_tags)
+}
+
+resource "aws_ec2_transit_gateway_vpc_attachment" "vpc3" {
+  subnet_ids         = [aws_subnet.vpc3.id]
+  transit_gateway_id = aws_ec2_transit_gateway.test.id
+  vpc_id             = module.vpc3.vpc_id
+
+  tags = merge({ Name = "to vpc3" }, var.base_tags)
 }
 
 resource "aws_route" "vpc1_vpc2" {
-  route_table_id            = aws_route_table.public_rt_vpc1.id
-  destination_cidr_block    = local.vpc2_cidr
-  vpc_peering_connection_id = aws_vpc_peering_connection.VPC_1_2.id
-  depends_on                = [aws_route_table.public_rt_vpc1]
+  route_table_id         = aws_route_table.public_rt_vpc1.id
+  destination_cidr_block = local.vpc2_cidr
+  transit_gateway_id     = aws_ec2_transit_gateway.test.id
+}
+
+resource "aws_route" "vpc1_vpc3" {
+  route_table_id         = aws_route_table.public_rt_vpc1.id
+  destination_cidr_block = local.vpc3_cidr
+  transit_gateway_id     = aws_ec2_transit_gateway.test.id
 }
 
 resource "aws_route" "vpc2_vpc1" {
-  route_table_id            = aws_route_table.public_rt_vpc2.id
-  destination_cidr_block    = local.vpc1_cidr
-  vpc_peering_connection_id = aws_vpc_peering_connection.VPC_1_2.id
-  depends_on                = [aws_route_table.public_rt_vpc2]
-}
-
-
-resource "aws_vpc_peering_connection" "VPC_2_3" {
-  vpc_id      = module.vpc2.vpc_id
-  peer_vpc_id = module.vpc3.vpc_id
-  auto_accept = true
-
-  tags = merge({ Name = local.vpc2_vpc3_pxc_name }, var.base_tags)
-}
-
-
-resource "aws_vpc_peering_connection_options" "VPC_2_3" {
-  vpc_peering_connection_id = aws_vpc_peering_connection.VPC_2_3.id
-
-  accepter {
-    #allow_remote_vpc_dns_resolution = true
-  }
-
-  requester {
-    allow_vpc_to_remote_classic_link = true
-    allow_classic_link_to_remote_vpc = true
-  }
+  route_table_id         = aws_route_table.public_rt_vpc2.id
+  destination_cidr_block = local.vpc1_cidr
+  transit_gateway_id     = aws_ec2_transit_gateway.test.id
 }
 
 resource "aws_route" "vpc2_vpc3" {
-  route_table_id            = aws_route_table.public_rt_vpc2.id
-  destination_cidr_block    = local.vpc3_cidr
-  vpc_peering_connection_id = aws_vpc_peering_connection.VPC_2_3.id
-  depends_on                = [aws_route_table.public_rt_vpc2]
+  route_table_id         = aws_route_table.public_rt_vpc2.id
+  destination_cidr_block = local.vpc3_cidr
+  transit_gateway_id     = aws_ec2_transit_gateway.test.id
+}
+
+resource "aws_route" "vpc3_vpc1" {
+  route_table_id         = aws_route_table.public_rt_vpc3.id
+  destination_cidr_block = local.vpc1_cidr
+  transit_gateway_id     = aws_ec2_transit_gateway.test.id
 }
 
 resource "aws_route" "vpc3_vpc2" {
-  route_table_id            = aws_route_table.public_rt_vpc3.id
-  destination_cidr_block    = local.vpc2_cidr
-  vpc_peering_connection_id = aws_vpc_peering_connection.VPC_2_3.id
-  depends_on                = [aws_route_table.public_rt_vpc3]
+  route_table_id         = aws_route_table.public_rt_vpc3.id
+  destination_cidr_block = local.vpc2_cidr
+  transit_gateway_id     = aws_ec2_transit_gateway.test.id
 }
