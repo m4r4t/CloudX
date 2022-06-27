@@ -23,7 +23,17 @@ variable "instance_type" {
   default = "t2.micro"
 }
 
+variable "asg_instance_type" {
+  type    = string
+  default = "t2.micro"
+}
+
 variable "path_to_key" {
   type    = string
   default = "~/.ssh/id_rsa.pub"
+}
+
+variable "http_port" {
+  type    = number
+  default = 80
 }

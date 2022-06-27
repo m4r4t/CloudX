@@ -29,3 +29,7 @@ data "aws_ami" "windows-2022" {
     values = ["Windows_Server-2022-English-Full-Base*"]
   }
 }
+
+data "aws_availability_zones" "available" {
+  state = "available"
+}
