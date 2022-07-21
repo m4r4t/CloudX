@@ -7,6 +7,8 @@ locals {
   asg_min          = 2
   asg_desired      = 3
   app_port         = 2368
+  db_url           = aws_db_instance.ghost.address
+  db_user          = aws_db_instance.ghost.username
   //az_ids = data.aws_availability_zones.available.id
 }
 
@@ -19,7 +21,7 @@ resource "aws_launch_template" "ghost" {
   instance_type          = var.instance_type
   key_name               = aws_key_pair.lab_key_pair.id
   vpc_security_group_ids = [aws_security_group.ec2_pool.id]
-  user_data              = base64encode(templatefile("ghost_app.sh", { LB_DNS_NAME = aws_lb.ghost_app.dns_name }))
+  user_data              = base64encode(templatefile("ghost_app.sh", { LB_DNS_NAME = aws_lb.ghost_app.dns_name, DB_URL = local.db_url, DB_USER = local.db_user, DB_NAME = local.db_name, DB_SECRET_NAME = local.db_secrets_name }))
   //user_data              = filebase64("ghost_app.sh")
 
   lifecycle {
@@ -32,6 +34,10 @@ resource "aws_launch_template" "ghost" {
       Name = "ec2-pool"
     }
   }
+
+  depends_on = [
+    aws_db_instance.ghost
+  ]
 
 }
 

@@ -3,12 +3,14 @@ locals {
   sg2_name        = "ec2_pool"
   sg3_name        = "alb"
   sg4_name        = "efs"
+  db_sg_name      = "mysql"
   efs_sg_name     = "efs_access"
   efs_sg_tag_name = "SG for EFS access"
   efs_port        = 2049
+  db_port         = 3306
 }
 
-
+//-------------------------------------------------------------
 resource "aws_security_group" "bastion" {
   name        = local.sg1_name
   description = "access to bastion"
@@ -40,6 +42,7 @@ resource "aws_security_group_rule" "allow_all" {
   security_group_id = aws_security_group.bastion.id
 }
 
+//-------------------------------------------------------------
 resource "aws_security_group" "ec2_pool" {
   name        = local.sg2_name
   description = "allows access to ec2 instances"
@@ -84,7 +87,7 @@ resource "aws_security_group_rule" "ec2_pool_egress_all" {
   security_group_id = aws_security_group.ec2_pool.id
 }
 
-
+//-------------------------------------------------------------
 resource "aws_security_group" "alb" {
   name        = local.sg3_name
   description = "allows access to alb"
@@ -113,7 +116,7 @@ resource "aws_security_group_rule" "alb_allow_all" {
 }
 
 
-
+//-------------------------------------------------------------
 resource "aws_security_group" "efs" {
   name        = local.sg4_name
   description = "defines access to efs mount points"
@@ -138,4 +141,28 @@ resource "aws_security_group_rule" "efs_egress_all" {
   protocol          = -1
   cidr_blocks       = [var.vpc_cidr]
   security_group_id = aws_security_group.efs.id
+}
+
+
+
+//-------------------------------------------------------------
+resource "aws_security_group" "mysql" {
+  name        = local.db_sg_name
+  description = "access to mysql"
+  vpc_id      = aws_vpc.lab1.id
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = merge({ Name = local.db_sg_name }, var.base_tags)
+}
+
+resource "aws_security_group_rule" "access_to_mysql" {
+  type                     = "ingress"
+  from_port                = local.db_port
+  to_port                  = local.db_port
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.ec2_pool.id
+  security_group_id        = aws_security_group.mysql.id
 }

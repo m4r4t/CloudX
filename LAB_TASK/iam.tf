@@ -16,7 +16,11 @@ resource "aws_iam_policy" "ec2_policy" {
           "ec2:Describe*",
           "elasticfilesystem:DescribeFileSystems",
           "elasticfilesystem:ClientMount",
-          "elasticfilesystem:ClientWrite"
+          "elasticfilesystem:ClientWrite",
+          "ssm:GetParameter*",
+          "secretsmanager:GetSecretValue",
+          "kms:Decrypt",
+          "rds-db:connect"
         ],
         Resource = [
           "*"

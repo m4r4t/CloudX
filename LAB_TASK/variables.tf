@@ -33,6 +33,11 @@ variable "instance_type" {
   default = "t2.micro"
 }
 
+variable "db_instance_type" {
+  type    = string
+  default = "db.t2.micro"
+}
+
 variable "path_to_key" {
   type    = string
   default = "~/.ssh/id_rsa.pub"
@@ -44,5 +49,6 @@ variable "http_port" {
 }
 
 variable "my_ip" {
-  type = string
+  type    = string
+  default = "198.45.118.158/32"
 }

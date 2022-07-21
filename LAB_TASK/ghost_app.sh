@@ -2,8 +2,12 @@
 
 exec > >(tee /var/log/cloud-init-output.log|logger -t user-data -s 2>/dev/console) 2>&1
 
+yum install -y jq
+
 REGION=$(/usr/bin/curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/[a-z]$//')
 EFS_ID=$(aws efs describe-file-systems --query 'FileSystems[?Name==`ghost_content`].FileSystemId' --region $REGION --output text)
+###DB_SECRET_NAME="/ghost/dbpassw"
+DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id ${DB_SECRET_NAME} --query SecretString  --region $REGION  --output text | jq -r '.password')
 
 ### Install pre-reqs
 curl -sL https://rpm.nodesource.com/setup_14.x | sudo bash -
@@ -29,9 +33,13 @@ cat << EOF > config.development.json
     "host": "0.0.0.0"
   },
   "database": {
-    "client": "sqlite3",
+    "client": "mysql",
     "connection": {
-      "filename": "/home/ghost_user/content/data/ghost-local.db"
+        "host": "${DB_URL}",
+        "port": 3306,
+        "user": "${DB_USER}",
+        "password": "$DB_PASSWORD",
+        "database": "${DB_NAME}"
     }
   },
   "mail": {
