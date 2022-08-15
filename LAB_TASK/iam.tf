@@ -60,3 +60,62 @@ resource "aws_iam_instance_profile" "ec2_ghost_profile" {
   name = "ec2_ghost_profile"
   role = aws_iam_role.ec2_efs_role.name
 }
+
+//-------------------------------------------------------
+resource "aws_iam_role" "ecs" {
+  name = "role_for_ecs"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+
+resource "aws_iam_policy" "ecs_efs" {
+  name        = "ecs_policy"
+  path        = "/"
+  description = "Allow EFS access for ecs containers"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "elasticfilesystem:DescribeFileSystems",
+          "elasticfilesystem:ClientMount",
+          "elasticfilesystem:ClientWrite"
+        ],
+        Resource = [
+          "*"
+        ]
+      },
+
+    ]
+
+  })
+}
+
+resource "aws_iam_policy_attachment" "ecs_efs" {
+  name       = "efs_for_ecs"
+  roles      = [aws_iam_role.ecs.name]
+  policy_arn = aws_iam_policy.ecs_efs.arn
+}
+
+resource "aws_iam_role_policy_attachment" "ecs-task-execution-role-policy-attachment" {
+  role       = aws_iam_role.ecs.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}

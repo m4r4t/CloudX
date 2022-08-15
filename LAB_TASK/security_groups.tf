@@ -6,6 +6,7 @@ locals {
   db_sg_name      = "mysql"
   efs_sg_name     = "efs_access"
   efs_sg_tag_name = "SG for EFS access"
+  ecs_sg_name     = "ECS access"
   efs_port        = 2049
   db_port         = 3306
 }
@@ -134,6 +135,15 @@ resource "aws_security_group_rule" "allow_efs_ingress" {
   security_group_id        = aws_security_group.efs.id
 }
 
+resource "aws_security_group_rule" "from_ecs" {
+  type                     = "ingress"
+  from_port                = local.efs_port
+  to_port                  = local.efs_port
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.fargate_pool.id
+  security_group_id        = aws_security_group.efs.id
+}
+
 resource "aws_security_group_rule" "efs_egress_all" {
   type              = "egress"
   from_port         = -1
@@ -151,9 +161,9 @@ resource "aws_security_group" "mysql" {
   description = "access to mysql"
   vpc_id      = aws_vpc.lab1.id
 
-  lifecycle {
-    create_before_destroy = true
-  }
+  //lifecycle {
+  //  create_before_destroy = true
+  //}
 
   tags = merge({ Name = local.db_sg_name }, var.base_tags)
 }
@@ -165,4 +175,69 @@ resource "aws_security_group_rule" "access_to_mysql" {
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.ec2_pool.id
   security_group_id        = aws_security_group.mysql.id
+}
+
+resource "aws_security_group_rule" "ecs2mysql" {
+  type                     = "ingress"
+  from_port                = local.db_port
+  to_port                  = local.db_port
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.fargate_pool.id
+  security_group_id        = aws_security_group.mysql.id
+}
+
+//------------------------------------------------------------------
+resource "aws_security_group" "fargate_pool" {
+  name        = local.ecs_sg_name
+  description = "Allows access for Fargate instances"
+  vpc_id      = aws_vpc.lab1.id
+
+  tags = merge({ Name = local.ecs_sg_name }, var.base_tags)
+}
+
+resource "aws_security_group_rule" "ecs_allow_efs" {
+  type                     = "ingress"
+  from_port                = local.efs_port
+  to_port                  = local.efs_port
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.efs.id
+  security_group_id        = aws_security_group.fargate_pool.id
+}
+
+resource "aws_security_group_rule" "ecs_allow_alb" {
+  type                     = "ingress"
+  from_port                = local.app_port
+  to_port                  = local.app_port
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.alb.id
+  security_group_id        = aws_security_group.fargate_pool.id
+}
+
+resource "aws_security_group_rule" "ecs_allow_ec2" {
+  type                     = "ingress"
+  from_port                = local.app_port
+  to_port                  = local.app_port
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.ec2_pool.id
+  security_group_id        = aws_security_group.fargate_pool.id
+}
+
+
+/*
+resource "aws_security_group_rule" "ecr_443" {
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.fargate_pool.id
+} */
+
+resource "aws_security_group_rule" "ecs_egress" {
+  type              = "egress"
+  from_port         = -1
+  to_port           = -1
+  protocol          = -1
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.fargate_pool.id
 }

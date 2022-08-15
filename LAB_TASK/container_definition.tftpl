@@ -1,0 +1,36 @@
+[
+  {
+  "name": "${TASK_NAME}",
+  "image": "${ECR_IMAGE}",
+  "essential": true,
+  "environment": [
+      { "name" : "url", "value" : "http://${LB_DNS_NAME}"},
+      { "name" : "database__client", "value" : "mysql"},
+      { "name" : "database__connection__host", "value" : "${DB_URL}"},
+      { "name" : "database__connection__user", "value" : "${DB_USER}"},
+      { "name" : "database__connection__password", "value" : "${PASS}"},
+      { "name" : "database__connection__database", "value" : "${DB_NAME}"}
+  ],
+    
+  "mountPoints": [
+      {
+          "containerPath": "/var/lib/ghost/content",
+          "sourceVolume": "ghost_volume"
+      }
+  ],
+  "portMappings": [
+      {
+      "containerPort": 2368,
+      "hostPort": 2368
+      }
+  ],
+  "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "${LOG_GROUP_NAME}",
+        "awslogs-region": "${REGION_NAME}",
+        "awslogs-stream-prefix": "streaming"
+      }
+    }
+  }
+]

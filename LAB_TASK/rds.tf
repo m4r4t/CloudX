@@ -6,8 +6,8 @@ locals {
 }
 
 resource "random_password" "db_master_pass" {
-  length           = 10
-  special          = false
+  length  = 10
+  special = false
   //min_special      = 5
   //override_special = "!#$%^&*()-_=+[]{}<>:?"
 }

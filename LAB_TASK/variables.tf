@@ -50,5 +50,5 @@ variable "http_port" {
 
 variable "my_ip" {
   type    = string
-  default = "198.45.118.158/32"
+  default = "5.251.245.54/32"
 }

@@ -2,6 +2,7 @@ locals {
   alb_name         = "ghost-alb"
   launch_tplt_name = "ghost"
   tg_name          = "ghost-ec2"
+  ecs_tg_name      = "ghost-fargate"
   asg_name         = "ghost_ec2_pool"
   asg_max          = 3
   asg_min          = 2
@@ -53,9 +54,12 @@ resource "aws_lb_target_group" "ghost" {
   name     = local.tg_name
   port     = local.app_port
   protocol = "HTTP"
+
+  
   stickiness {
     type = "lb_cookie"
   }
+  
   vpc_id = aws_vpc.lab1.id
 
   health_check {
@@ -68,15 +72,34 @@ resource "aws_lb_target_group" "ghost" {
   }
 }
 
-resource "aws_alb_listener" "listener_http" {
+resource "aws_lb_listener" "listener_http" {
   load_balancer_arn = aws_lb.ghost_app.arn
   port              = "80"
   protocol          = "HTTP"
 
   default_action {
-    target_group_arn = aws_lb_target_group.ghost.arn
-    type             = "forward"
+    type = "forward"
+
+    forward {
+      target_group {
+        arn    = aws_lb_target_group.ghost.arn
+        weight = 50
+      }
+
+      target_group {
+        arn    = aws_lb_target_group.ecs.arn
+        weight = 50
+      }
+      
+      stickiness {
+        enabled  = true
+        duration = 600
+      }
+      
+    }
   }
+
+
 }
 
 resource "aws_autoscaling_group" "ghost" {
@@ -91,5 +114,33 @@ resource "aws_autoscaling_group" "ghost" {
   launch_template {
     id      = aws_launch_template.ghost.id
     version = "$Latest"
+  }
+}
+
+//------------------------------------------------------------------
+resource "aws_lb_target_group" "ecs" {
+  name     = local.ecs_tg_name
+  port     = local.app_port
+  protocol = "HTTP"
+
+  target_type = "ip"
+  vpc_id      = aws_vpc.lab1.id
+
+/*
+  stickiness {
+    type = "lb_cookie"
+  }
+*/
+  slow_start = 240
+
+  health_check {
+    path = "/"
+    port = local.app_port
+    interval = 60
+    timeout = 30
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
