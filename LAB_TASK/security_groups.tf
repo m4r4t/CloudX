@@ -196,12 +196,13 @@ resource "aws_security_group" "fargate_pool" {
 }
 
 resource "aws_security_group_rule" "ecs_allow_efs" {
-  type                     = "ingress"
-  from_port                = local.efs_port
-  to_port                  = local.efs_port
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.efs.id
-  security_group_id        = aws_security_group.fargate_pool.id
+  type      = "ingress"
+  from_port = local.efs_port
+  to_port   = local.efs_port
+  protocol  = "tcp"
+  //source_security_group_id = aws_security_group.efs.id
+  cidr_blocks       = [var.vpc_cidr]
+  security_group_id = aws_security_group.fargate_pool.id
 }
 
 resource "aws_security_group_rule" "ecs_allow_alb" {
@@ -222,16 +223,14 @@ resource "aws_security_group_rule" "ecs_allow_ec2" {
   security_group_id        = aws_security_group.fargate_pool.id
 }
 
-
-/*
-resource "aws_security_group_rule" "ecr_443" {
+resource "aws_security_group_rule" "ecs_allow_2368" {
   type              = "ingress"
-  from_port         = 443
-  to_port           = 443
+  from_port         = 2368
+  to_port           = 2368
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.fargate_pool.id
-} */
+}
 
 resource "aws_security_group_rule" "ecs_egress" {
   type              = "egress"
@@ -240,4 +239,18 @@ resource "aws_security_group_rule" "ecs_egress" {
   protocol          = -1
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.fargate_pool.id
+}
+
+resource "aws_security_group" "vpce" {
+  name   = "For vpcendpoints"
+  vpc_id = aws_vpc.lab1.id
+}
+
+resource "aws_security_group_rule" "ecs_vpce" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.fargate_pool.id
+  security_group_id        = aws_security_group.vpce.id
 }

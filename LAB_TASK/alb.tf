@@ -28,6 +28,11 @@ resource "aws_launch_template" "ghost" {
   lifecycle {
     create_before_destroy = true
   }
+
+  monitoring {
+    enabled = true
+  }
+
   tag_specifications {
     resource_type = "instance"
 
@@ -55,11 +60,11 @@ resource "aws_lb_target_group" "ghost" {
   port     = local.app_port
   protocol = "HTTP"
 
-  
+
   stickiness {
     type = "lb_cookie"
   }
-  
+
   vpc_id = aws_vpc.lab1.id
 
   health_check {
@@ -90,12 +95,12 @@ resource "aws_lb_listener" "listener_http" {
         arn    = aws_lb_target_group.ecs.arn
         weight = 50
       }
-      
+
       stickiness {
         enabled  = true
         duration = 600
       }
-      
+
     }
   }
 
@@ -126,7 +131,7 @@ resource "aws_lb_target_group" "ecs" {
   target_type = "ip"
   vpc_id      = aws_vpc.lab1.id
 
-/*
+  /*
   stickiness {
     type = "lb_cookie"
   }
@@ -134,10 +139,11 @@ resource "aws_lb_target_group" "ecs" {
   slow_start = 240
 
   health_check {
-    path = "/"
-    port = local.app_port
+    path     = "/"
+    port     = local.app_port
     interval = 60
-    timeout = 30
+    timeout  = 30
+    //matcher = "200,503"
   }
 
   lifecycle {

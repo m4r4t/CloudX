@@ -91,6 +91,7 @@ resource "aws_route_table_association" "ecs-subnets" {
   route_table_id = aws_route_table.private-rt.id
 }
 
+/*
 //-------------------------------------------------------
 resource "aws_eip" "nat_gw" {
   vpc = true
@@ -106,3 +107,4 @@ resource "aws_route" "ecs_inet" {
   destination_cidr_block = "0.0.0.0/0"
   nat_gateway_id         = aws_nat_gateway.ecs.id
 }
+*/

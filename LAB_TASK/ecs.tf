@@ -5,7 +5,7 @@ locals {
   ecs_cluster_name = "ghost"
   ecs_svc_name     = "ghost"
   //ecr_image        = "047259566030.dkr.ecr.eu-west-1.amazonaws.com/ghost:4.12"
-  ecr_image        = "ghost:5"
+  ecr_image          = "047259566030.dkr.ecr.eu-west-1.amazonaws.com/ghost"
   ecs_log_group_name = "ECS-Fargate"
 }
 
@@ -14,8 +14,8 @@ resource "aws_ecs_task_definition" "ghost" {
   family                   = local.task_def_name
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
-  cpu                      = 256
-  memory                   = 1024
+  cpu                      = 1024
+  memory                   = 2048
   task_role_arn            = aws_iam_role.ecs.arn
   execution_role_arn       = aws_iam_role.ecs.arn
 
@@ -28,15 +28,15 @@ resource "aws_ecs_task_definition" "ghost" {
   }
 
   container_definitions = templatefile("container_definition.tftpl", { LB_DNS_NAME = aws_lb.ghost_app.dns_name,
-                                                                       TASK_NAME = local.task_def_name, 
-                                                                       ECR_IMAGE = local.ecr_image, 
-                                                                       DB_URL = local.db_url, 
-                                                                       DB_USER = local.db_username, 
-                                                                       PASS = local.db_pass_for_ecs, 
-                                                                       DB_NAME = local.db_name,
-                                                                       LOG_GROUP_NAME = local.ecs_log_group_name,
-                                                                       REGION_NAME = data.aws_region.current.name 
-                                                                      })
+    TASK_NAME      = local.task_def_name,
+    ECR_IMAGE      = local.ecr_image,
+    DB_URL         = local.db_url,
+    DB_USER        = local.db_username,
+    PASS           = local.db_pass_for_ecs,
+    DB_NAME        = local.db_name,
+    LOG_GROUP_NAME = local.ecs_log_group_name,
+    REGION_NAME    = data.aws_region.current.name
+  })
 }
 
 resource "aws_ecs_cluster" "ghost" {
@@ -72,26 +72,41 @@ resource "aws_ecs_service" "ghost" {
 
 
 resource "aws_cloudwatch_log_group" "ecs" {
-  name = local.ecs_log_group_name
+  name              = local.ecs_log_group_name
   retention_in_days = 1
 }
 //------------------------------------------------------------
-/*
-resource "aws_vpc_endpoint" "ecr_api" {
-  vpc_id = aws_vpc.lab1.id
-  service_name = "com.amazonaws.${data.aws_region.current.name}.ecr.api"
-  vpc_endpoint_type = "Interface"
 
-  security_group_ids = [aws_security_group.fargate_pool.id]
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id              = aws_vpc.lab1.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.api"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.ecs_fargate[*].id
+  security_group_ids  = [aws_security_group.vpce.id]
   private_dns_enabled = true
 }
 
 resource "aws_vpc_endpoint" "ecr_dkr" {
-  vpc_id = aws_vpc.lab1.id
-  service_name = "com.amazonaws.${data.aws_region.current.name}.ecr.dkr"
-  vpc_endpoint_type = "Interface"
-
-  security_group_ids = [aws_security_group.fargate_pool.id]
+  vpc_id              = aws_vpc.lab1.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.ecs_fargate[*].id
+  security_group_ids  = [aws_security_group.vpce.id]
   private_dns_enabled = true
 }
-*/
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.lab1.id
+  service_name      = "com.amazonaws.${data.aws_region.current.name}.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = [aws_route_table.private-rt.id]
+}
+
+resource "aws_vpc_endpoint" "cw_logs" {
+  vpc_id              = aws_vpc.lab1.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.logs"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.ecs_fargate[*].id
+  security_group_ids  = [aws_security_group.vpce.id]
+  private_dns_enabled = true
+}
